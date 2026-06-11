@@ -5,32 +5,41 @@ from scipy import stats
 from openai import OpenAI
 import os
 
-# 🔐 OpenAI (vem do Streamlit Secrets)
+# 🔐 OpenAI (Streamlit Secrets)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 st.set_page_config(page_title="Estatística+", layout="centered")
 
 st.title("📊 Estatística+")
-st.subheader("Transformando dados em decisões com IA 🤖")
+st.caption("Assistente de estatística com IA 🤖")
 
-# 📥 INPUT DE DADOS
+# ------------------------
+# 📥 DADOS
+# ------------------------
 dados_input = st.text_area(
     "Insere os dados (separados por vírgula)",
     "12, 15, 18, 20, 22"
 )
 
+# ------------------------
 # 🤖 FUNÇÃO IA
-def responder_ia(pergunta):
-    response = client.chat.completions.create(
+# ------------------------
+def responder_ia(mensagem):
+    resposta = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "És um professor de estatística simples e claro."},
-            {"role": "user", "content": pergunta}
+            {
+                "role": "system",
+                "content": "És um assistente de estatística que explica tudo de forma simples em português de Angola/Portugal."
+            },
+            {"role": "user", "content": mensagem}
         ]
     )
-    return response.choices[0].message.content
+    return resposta.choices[0].message.content
 
-# 📊 ANÁLISE
+# ------------------------
+# 📊 ANÁLISE ESTATÍSTICA
+# ------------------------
 if st.button("Analisar dados"):
 
     dados = np.array([float(x.strip()) for x in dados_input.split(",")])
@@ -43,52 +52,41 @@ if st.button("Analisar dados"):
 
     st.subheader("📊 Resultados")
 
-    st.write(f"Média: {media:.2f}")
-    st.write(f"Mediana: {mediana:.2f}")
-    st.write(f"Moda: {moda}")
-    st.write(f"Variância: {variancia:.2f}")
-    st.write(f"Desvio padrão: {desvio:.2f}")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Média", f"{media:.2f}")
+        st.metric("Mediana", f"{mediana:.2f}")
+
+    with col2:
+        st.metric("Desvio padrão", f"{desvio:.2f}")
+        st.metric("Variância", f"{variancia:.2f}")
+
+    st.metric("Moda", moda)
 
     # 📈 GRÁFICO
-    st.subheader("📈 Histograma")
+    st.subheader("📈 Gráfico de Distribuição")
 
     fig, ax = plt.subplots()
     ax.hist(dados, bins=5)
     st.pyplot(fig)
 
-    # 🤖 IA EXPLICATIVA
-    st.subheader("🤖 IA Explicativa")
-
-    if st.button("Gerar análise IA"):
-
-        prompt = f"""
-        Analisa estes dados:
-
-        Dados: {dados}
-        Média: {media}
-        Mediana: {mediana}
-        Moda: {moda}
-        Variância: {variancia}
-        Desvio padrão: {desvio}
-
-        Explica de forma simples e dá conclusão final.
-        """
-
-        resposta = responder_ia(prompt)
-        st.write(resposta)
-
+# ------------------------
 # 💬 CHAT IA
+# ------------------------
 st.divider()
-st.subheader("💬 Chat IA")
+st.subheader("💬 Chat com IA")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# histórico
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-user_input = st.chat_input("Pergunta sobre estatística...")
+# input
+user_input = st.chat_input("Fala com a IA sobre estatística...")
 
 if user_input:
 
