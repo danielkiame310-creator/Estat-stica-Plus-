@@ -1,0 +1,105 @@
+ import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+from openai import OpenAI
+import os
+
+# 🔐 OpenAI (vem do Streamlit Secrets)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+st.set_page_config(page_title="Estatística+", layout="centered")
+
+st.title("📊 Estatística+")
+st.subheader("Transformando dados em decisões com IA 🤖")
+
+# 📥 INPUT DE DADOS
+dados_input = st.text_area(
+    "Insere os dados (separados por vírgula)",
+    "12, 15, 18, 20, 22"
+)
+
+# 🤖 FUNÇÃO IA
+def responder_ia(pergunta):
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "És um professor de estatística simples e claro."},
+            {"role": "user", "content": pergunta}
+        ]
+    )
+    return response.choices[0].message.content
+
+# 📊 ANÁLISE
+if st.button("Analisar dados"):
+
+    dados = np.array([float(x.strip()) for x in dados_input.split(",")])
+
+    media = np.mean(dados)
+    mediana = np.median(dados)
+    moda = stats.mode(dados, keepdims=True).mode[0]
+    variancia = np.var(dados)
+    desvio = np.std(dados)
+
+    st.subheader("📊 Resultados")
+
+    st.write(f"Média: {media:.2f}")
+    st.write(f"Mediana: {mediana:.2f}")
+    st.write(f"Moda: {moda}")
+    st.write(f"Variância: {variancia:.2f}")
+    st.write(f"Desvio padrão: {desvio:.2f}")
+
+    # 📈 GRÁFICO
+    st.subheader("📈 Histograma")
+
+    fig, ax = plt.subplots()
+    ax.hist(dados, bins=5)
+    st.pyplot(fig)
+
+    # 🤖 IA EXPLICATIVA
+    st.subheader("🤖 IA Explicativa")
+
+    if st.button("Gerar análise IA"):
+
+        prompt = f"""
+        Analisa estes dados:
+
+        Dados: {dados}
+        Média: {media}
+        Mediana: {mediana}
+        Moda: {moda}
+        Variância: {variancia}
+        Desvio padrão: {desvio}
+
+        Explica de forma simples e dá conclusão final.
+        """
+
+        resposta = responder_ia(prompt)
+        st.write(resposta)
+
+# 💬 CHAT IA
+st.divider()
+st.subheader("💬 Chat IA")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+
+user_input = st.chat_input("Pergunta sobre estatística...")
+
+if user_input:
+
+    st.session_state.messages.append({"role": "user", "content": user_input})
+
+    with st.chat_message("user"):
+        st.write(user_input)
+
+    resposta = responder_ia(user_input)
+
+    st.session_state.messages.append({"role": "assistant", "content": resposta})
+
+    with st.chat_message("assistant"):
+        st.write(resposta)
